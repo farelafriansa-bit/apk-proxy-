@@ -9,6 +9,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.net.VpnService;
 import android.os.Bundle;
 import android.os.Handler;
 import android.webkit.JavascriptInterface;
@@ -26,6 +27,8 @@ import java.util.List;
 public class MainActivity extends Activity {
     private WebView webView;
     private Handler handler = new Handler();
+
+    private static final int VPN_REQUEST_CODE = 0x0F;
 
     // List game yang sudah ditambahkan user
     private List<String> userGameList = new ArrayList<>();
@@ -74,6 +77,20 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient());
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
+            startProxyVpn();
+        }
+    }
+
+    private void startProxyVpn() {
+        Intent intent = new Intent(this, ProxyVpnService.class);
+        intent.setAction("START_VPN");
+        startService(intent);
+    }
+
     // ========================================
     // WEB APP INTERFACE
     // ========================================
@@ -98,7 +115,7 @@ public class MainActivity extends Activity {
                 showToast("bypass: " + (isAutoBypass ? "ON ✅" : "OFF ❌"));
             } else if (menu.equals("refresh")) {
                 isAutoRefresh = action.equals("start");
-                showToast("auto refres: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
+                showToast("auto refresh: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
             }
         }
 
@@ -181,7 +198,8 @@ public class MainActivity extends Activity {
             PackageManager pm = getPackageManager();
 
             try {
-                for (String pkg : userGameList) {
+                List<String> listCopy = new ArrayList<>(userGameList);
+                for (String pkg : listCopy) {
                     try {
                         ApplicationInfo appInfo = pm.getApplicationInfo(pkg, 0);
                         JSONObject game = new JSONObject();
@@ -206,42 +224,50 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openGame(String packageName) {
-            try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
-                if (intent != null) {
-                    startActivity(intent);
-                    showToast("🎮 Membuka game...");
-                } else {
-                    showToast("❌ Game tidak ditemukan!");
-                }
-            } catch (Exception e) {
-                showToast("❌ Gagal membuka game!");
-            }
+            startVpnAndOpenApp(packageName);
         }
 
         @JavascriptInterface
         public void openFreeFire() {
-            try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefireth");
-                if (intent != null) {
-                    startActivity(intent);
-                    showToast("🎮 Membuka Free Fire...");
-                } else {
-                    intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
-                    if (intent != null) {
-                        startActivity(intent);
-                        showToast("🎮 Membuka Free Fire MAX...");
-                    } else {
-                        Intent playStore = new Intent(Intent.ACTION_VIEW);
-                        playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
-                        playStore.setPackage("com.android.vending");
-                        startActivity(playStore);
-                        showToast("📥 Free Fire tidak terinstall, buka Play Store...");
+            startVpnAndOpenApp("com.dts.freefireth");
+        }
+
+        private void startVpnAndOpenApp(String packageName) {
+            Intent vpnIntent = VpnService.prepare(MainActivity.this);
+            if (vpnIntent != null) {
+                startActivityForResult(vpnIntent, VPN_REQUEST_CODE);
+            } else {
+                startProxyVpn();
+            }
+
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+                        if (intent != null) {
+                            startActivity(intent);
+                            showToast("🎮 Membuka " + (packageName.contains("freefire") ? "Free Fire" : "game") + "...");
+                        } else if (packageName.equals("com.dts.freefireth")) {
+                            Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
+                            if (intentMax != null) {
+                                startActivity(intentMax);
+                                showToast("🎮 Membuka Free Fire MAX...");
+                            } else {
+                                Intent playStore = new Intent(Intent.ACTION_VIEW);
+                                playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
+                                playStore.setPackage("com.android.vending");
+                                startActivity(playStore);
+                                showToast("📥 Free Fire tidak terinstall, buka Play Store...");
+                            }
+                        } else {
+                            showToast("❌ Game tidak ditemukan!");
+                        }
+                    } catch (Exception e) {
+                        showToast("❌ Gagal membuka game!");
                     }
                 }
-            } catch (Exception e) {
-                showToast("❌ Gagal membuka Free Fire!");
-            }
+            }, 2000); // Tunggu 2 detik untuk inisialisasi VPN
         }
 
         private String drawableToBase64(Drawable drawable) {
@@ -250,18 +276,23 @@ public class MainActivity extends Activity {
                 if (drawable instanceof android.graphics.drawable.BitmapDrawable) {
                     bitmap = ((android.graphics.drawable.BitmapDrawable) drawable).getBitmap();
                 } else {
-                    bitmap = android.graphics.Bitmap.createBitmap(
-                        drawable.getIntrinsicWidth(),
-                        drawable.getIntrinsicHeight(),
-                        android.graphics.Bitmap.Config.ARGB_8888
-                    );
+                    int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 128;
+                    int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 128;
+
+                    // Scale down for performance
+                    if (width > 128) {
+                        height = (int) (height * (128.0 / width));
+                        width = 128;
+                    }
+
+                    bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
                     drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                     drawable.draw(canvas);
                 }
 
                 java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, baos);
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 80, baos);
                 byte[] imageBytes = baos.toByteArray();
                 return android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
             } catch (Exception e) {

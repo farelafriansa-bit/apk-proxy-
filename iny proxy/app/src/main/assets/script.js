@@ -20,7 +20,7 @@ function getMenuName(menu) {
         speed: 'speed up',
         jump: 'back jump',
         bypass: 'bypass',
-        refresh: 'auto refres'
+        refresh: 'auto refresh'
     };
     return names[menu] || menu;
 }
@@ -34,13 +34,17 @@ function toggleMenu(menu, isOn) {
     const statusId = 'status' + menu.charAt(0).toUpperCase() + menu.slice(1);
     const statusEl = document.getElementById(statusId);
     if (isOn) {
-        statusEl.textContent = 'ON';
-        statusEl.className = 'menu-status on';
+        if (statusEl) {
+            statusEl.textContent = 'ON';
+            statusEl.className = 'menu-status on';
+        }
         showToast('✅ ' + getMenuName(menu) + ' AKTIF');
         Android.executeCommand(menu, 'start');
     } else {
-        statusEl.textContent = 'OFF';
-        statusEl.className = 'menu-status off';
+        if (statusEl) {
+            statusEl.textContent = 'OFF';
+            statusEl.className = 'menu-status off';
+        }
         showToast('⛔ ' + getMenuName(menu) + ' NONAKTIF');
         Android.executeCommand(menu, 'stop');
     }
@@ -51,6 +55,8 @@ function toggleMenu(menu, isOn) {
 // ========================================
 function openAddGameModal() {
     const modal = document.getElementById('addGameModal');
+    if (!modal) return;
+
     modal.classList.add('active');
     document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">🔍 Scanning game...</p>';
 
@@ -92,7 +98,8 @@ function openAddGameModal() {
 }
 
 function closeAddGameModal() {
-    document.getElementById('addGameModal').classList.remove('active');
+    var modal = document.getElementById('addGameModal');
+    if (modal) modal.classList.remove('active');
     refreshUserGames();
 }
 
@@ -101,20 +108,17 @@ function closeAddGameModal() {
 // ========================================
 function addGame(packageName) {
     Android.addGame(packageName);
-    showToast('✅ Game berhasil ditambahkan!');
     refreshUserGames();
     openAddGameModal();
 }
 
 function removeGameAndRefresh(packageName) {
     Android.removeGame(packageName);
-    showToast('🗑️ Game dihapus dari daftar');
     refreshUserGames();
 }
 
 function playGame(packageName) {
     Android.openGame(packageName);
-    showToast('🎮 Membuka game...');
 }
 
 // ========================================
@@ -181,36 +185,7 @@ function refreshUserGames() {
 // START GAME
 // ========================================
 function startGame() {
-    let activeMenus = [];
-    for (let key in menuState) {
-        if (menuState[key]) {
-            activeMenus.push(getMenuName(key));
-        }
-    }
-
-    try {
-        var gamesJson = Android.getUserGames();
-        var games = JSON.parse(gamesJson);
-
-        if (games.length > 0) {
-            var firstGame = games[0];
-            var msg = '🎮 Membuka ' + firstGame.appName;
-            if (activeMenus.length > 0) {
-                msg += ' dengan: ' + activeMenus.join(', ');
-            }
-            showToast(msg);
-            Android.openGame(firstGame.packageName);
-        } else {
-            if (activeMenus.length > 0) {
-                showToast('🎮 Membuka Free Fire dengan: ' + activeMenus.join(', '));
-            } else {
-                showToast('🎮 Membuka Free Fire...');
-            }
-            Android.openFreeFire();
-        }
-    } catch(e) {
-        showToast('❌ Gagal membuka game!');
-    }
+    Android.openFreeFire();
 }
 
 // ========================================
