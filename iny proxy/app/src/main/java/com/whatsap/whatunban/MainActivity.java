@@ -1,6 +1,9 @@
 package com.whatsap.whatunban;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ClipboardManager;
 import android.content.ClipData;
 import android.content.Context;
@@ -9,6 +12,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,17 +22,24 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private Handler handler = new Handler(Looper.getMainLooper());
+
+    private static final String CHANNEL_ID = "debug_channel";
+    private static final int NOTIFICATION_ID = 101;
+    private static final int PERMISSION_REQUEST_CODE = 123;
 
     // List game yang sudah ditambahkan user
     private List<String> userGameList = new ArrayList<>();
@@ -45,6 +56,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        createNotificationChannel();
+        requestNecessaryPermissions();
 
         webView = (WebView) findViewById(R.id.webView);
 
@@ -75,6 +89,33 @@ public class MainActivity extends Activity {
 			});
 
         webView.setWebChromeClient(new WebChromeClient());
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Debugging Notifications";
+            String description = "Notifications for Wireless Debugging and Pairing";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void requestNecessaryPermissions() {
+        List<String> permissions = new ArrayList<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+
+        if (!permissions.isEmpty()) {
+            ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+        }
     }
 
     // ========================================
@@ -159,19 +200,13 @@ public class MainActivity extends Activity {
         public String checkDebugStatus() {
             JSONObject status = new JSONObject();
             try {
-                // 1. Check Wireless Debugging (ADB over WiFi)
                 boolean adbEnabled = android.provider.Settings.Global.getInt(getContentResolver(), "adb_enabled", 0) > 0;
-                // Note: Checking if actually connected to wifi debugging is harder without root/shell
                 status.put("wireless", adbEnabled);
 
-                // 2. Check Shizuku Status (Simple check if service is responding)
                 boolean shizukuRunning = false;
                 try {
-                    // Try to execute a simple command via shizuku-shell if possible,
-                    // but for status we check if package is installed and responsive
                     Process process = Runtime.getRuntime().exec("sh /system/bin/getprop moe.shizuku.privileged.api");
                     shizukuRunning = true;
-                    // In real app, we'd check Shizuku.getBinder() != null
                 } catch (Exception e) {}
 
                 status.put("shizuku", shizukuRunning);
@@ -186,8 +221,22 @@ public class MainActivity extends Activity {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    showToast("🔑 Masukkan kode pairing di panel notifikasi sistem");
-                    // Typically this opens the notification shade or deep links to pairing
+                    showToast("🔑 Masukkan kode pairing di panel notifikasi");
+
+                    NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, CHANNEL_ID)
+                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                            .setContentTitle("Pairing Debugging Nirkabel")
+                            .setContentText("Klik di sini untuk memasukkan kode pairing Anda")
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                            .setAutoCancel(true);
+
+                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
+                    try {
+                        notificationManager.notify(NOTIFICATION_ID, builder.build());
+                    } catch (SecurityException e) {
+                        showToast("⚠️ Berikan izin notifikasi!");
+                    }
                 }
             });
         }
