@@ -251,17 +251,12 @@ public class MainActivity extends Activity {
             });
         }
 
-        // ========================================
-        // SCAN ALL GAME DI HP
-        // ========================================
         @JavascriptInterface
         public String scanAllGames() {
             JSONArray gamesArray = new JSONArray();
             PackageManager pm = getPackageManager();
-
             try {
                 List<ApplicationInfo> apps = pm.getInstalledApplications(0);
-
                 for (ApplicationInfo appInfo : apps) {
                     if (isGameApp(appInfo, pm)) {
                         JSONObject game = new JSONObject();
@@ -269,18 +264,15 @@ public class MainActivity extends Activity {
                         game.put("appName", pm.getApplicationLabel(appInfo).toString());
                         game.put("isInstalled", true);
                         game.put("isAdded", userGameList.contains(appInfo.packageName));
-
                         Drawable icon = pm.getApplicationIcon(appInfo);
                         String iconBase64 = drawableToBase64(icon);
                         game.put("iconBase64", iconBase64);
-
                         gamesArray.put(game);
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
             return gamesArray.toString();
         }
 
@@ -297,11 +289,8 @@ public class MainActivity extends Activity {
                 "com.netease.heartpro", "com.dragonnest", "com.vng.pubgmobile",
                 "com.tencent.tmgp.cod", "com.pubg.imobile"
             };
-
             for (String pkg : gamePackages) {
-                if (appInfo.packageName.equals(pkg)) {
-                    return true;
-                }
+                if (appInfo.packageName.equals(pkg)) return true;
             }
             return false;
         }
@@ -338,9 +327,7 @@ public class MainActivity extends Activity {
         public String getUserGames() {
             JSONArray gamesArray = new JSONArray();
             PackageManager pm = getPackageManager();
-
             try {
-                // Iterating over synchronized list requires manual synchronization
                 synchronized (userGameList) {
                     List<String> listCopy = new ArrayList<String>(userGameList);
                     for (String pkg : listCopy) {
@@ -349,11 +336,9 @@ public class MainActivity extends Activity {
                             JSONObject game = new JSONObject();
                             game.put("packageName", pkg);
                             game.put("appName", pm.getApplicationLabel(appInfo).toString());
-
                             Drawable icon = pm.getApplicationIcon(appInfo);
                             String iconBase64 = drawableToBase64(icon);
                             game.put("iconBase64", iconBase64);
-
                             gamesArray.put(game);
                         } catch (PackageManager.NameNotFoundException e) {
                             userGameList.remove(pkg);
@@ -363,7 +348,6 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
             return gamesArray.toString();
         }
 
@@ -394,21 +378,17 @@ public class MainActivity extends Activity {
                 public void run() {
                     try {
                         Intent intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefireth");
+                        if (intent == null) intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
+
                         if (intent != null) {
                             startActivity(intent);
                             showToast("🎮 Membuka Free Fire...");
                         } else {
-                            Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
-                            if (intentMax != null) {
-                                startActivity(intentMax);
-                                showToast("🎮 Membuka Free Fire MAX...");
-                            } else {
-                                Intent playStore = new Intent(Intent.ACTION_VIEW);
-                                playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
-                                playStore.setPackage("com.android.vending");
-                                startActivity(playStore);
-                                showToast("📥 Free Fire tidak terinstall, buka Play Store...");
-                            }
+                            Intent playStore = new Intent(Intent.ACTION_VIEW);
+                            playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
+                            playStore.setPackage("com.android.vending");
+                            startActivity(playStore);
+                            showToast("📥 Free Fire tidak terinstall!");
                         }
                     } catch (Exception e) {
                         showToast("❌ Gagal membuka Free Fire!");
@@ -425,18 +405,15 @@ public class MainActivity extends Activity {
                 } else {
                     int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 128;
                     int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 128;
-
                     if (width > 128) {
                         height = (int) (height * (128.0 / width));
                         width = 128;
                     }
-
                     bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
                     drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                     drawable.draw(canvas);
                 }
-
                 java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
                 bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 80, baos);
                 byte[] imageBytes = baos.toByteArray();
@@ -477,6 +454,52 @@ public class MainActivity extends Activity {
                 return item.getText().toString();
             }
             return "";
+        }
+
+        @JavascriptInterface
+        public void executeBooster(final String type, final String action) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (type.equals("fps")) {
+                        if (action.equals("start")) {
+                            runShizukuShell("settings put system peak_refresh_rate 144.0");
+                            runShizukuShell("settings put system min_refresh_rate 144.0");
+                            showToast("🚀 Max FPS 144Hz Diaktifkan");
+                        } else {
+                            runShizukuShell("settings delete system peak_refresh_rate");
+                            runShizukuShell("settings delete system min_refresh_rate");
+                            showToast("📉 FPS Dikembalikan ke Default");
+                        }
+                    } else if (type.equals("res")) {
+                        if (action.equals("start")) {
+                            runShizukuShell("wm size 720x1280");
+                            runShizukuShell("wm density 240");
+                            showToast("📉 Resolusi Diturunkan (Lag Fix)");
+                        } else {
+                            runShizukuShell("wm size reset");
+                            runShizukuShell("wm density reset");
+                            showToast("🔄 Resolusi Dikembalikan");
+                        }
+                    } else if (type.equals("mode")) {
+                        if (action.equals("start")) {
+                            runShizukuShell("settings put global policy_control immersive.full=*");
+                            runShizukuShell("settings put global heads_up_notifications_enabled 0");
+                            showToast("🤫 Gaming Mode: ON");
+                        } else {
+                            runShizukuShell("settings put global policy_control null");
+                            runShizukuShell("settings put global heads_up_notifications_enabled 1");
+                            showToast("🤫 Gaming Mode: OFF");
+                        }
+                    }
+                }
+            });
+        }
+
+        private void runShizukuShell(String command) {
+            try {
+                Runtime.getRuntime().exec(new String[]{"sh", "-c", "shizuku -c '" + command + "'"});
+            } catch (Exception e) {}
         }
     }
 }

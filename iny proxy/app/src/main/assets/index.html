@@ -169,6 +169,69 @@
 		</div>
 	  </div>
 
+
+	  <!-- GAME BOOSTER -->
+	  <div class="menu-item" style="background: #f0fdf4; border-color: #1a7a4a; margin-top: 20px;">
+		<div class="menu-left">
+		  <span class="menu-icon">🚀</span>
+		  <div class="menu-info">
+			<span class="menu-title" style="color: #1a7a4a;">Game Booster (Shizuku)</span>
+			<span class="menu-desc">Optimasi performa & kenyamanan</span>
+		  </div>
+		</div>
+	  </div>
+
+	  <div class="menu-item">
+		<div class="menu-left">
+		  <span class="menu-icon">📈</span>
+		  <div class="menu-info">
+			<span class="menu-title">Max FPS (144Hz)</span>
+			<span class="menu-desc">Paksa refresh rate tertinggi</span>
+		  </div>
+		</div>
+		<div class="menu-right">
+		  <span class="menu-status off" id="statusFps">OFF</span>
+		  <label class="switch">
+			<input type="checkbox" id="toggleFps" onchange="toggleBooster('fps', this.checked)">
+			<span class="slider"></span>
+		  </label>
+		</div>
+	  </div>
+
+	  <div class="menu-item">
+		<div class="menu-left">
+		  <span class="menu-icon">📉</span>
+		  <div class="menu-info">
+			<span class="menu-title">Lag Fix (Res)</span>
+			<span class="menu-desc">Turunkan resolusi layar</span>
+		  </div>
+		</div>
+		<div class="menu-right">
+		  <span class="menu-status off" id="statusRes">OFF</span>
+		  <label class="switch">
+			<input type="checkbox" id="toggleRes" onchange="toggleBooster('res', this.checked)">
+			<span class="slider"></span>
+		  </label>
+		</div>
+	  </div>
+
+	  <div class="menu-item">
+		<div class="menu-left">
+		  <span class="menu-icon">🤫</span>
+		  <div class="menu-info">
+			<span class="menu-title">Gaming Mode</span>
+			<span class="menu-desc">Blokir Notif & Immersive</span>
+		  </div>
+		</div>
+		<div class="menu-right">
+		  <span class="menu-status off" id="statusMode">OFF</span>
+		  <label class="switch">
+			<input type="checkbox" id="toggleMode" onchange="toggleBooster('mode', this.checked)">
+			<span class="slider"></span>
+		  </label>
+		</div>
+	  </div>
+
 	  <!-- DEBUGGING SETTINGS -->
 	  <div class="menu-item" style="background: #fdf2f2; border-color: #e74c3c;">
 		<div class="menu-left">
@@ -267,7 +330,26 @@
 	  </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js">
+        function toggleBooster(type, isOn) {
+            const statusId = 'status' + type.charAt(0).toUpperCase() + type.slice(1);
+            const statusEl = document.getElementById(statusId);
+            if (isOn) {
+                if (statusEl) {
+                    statusEl.textContent = 'ON';
+                    statusEl.className = 'menu-status on';
+                }
+                Android.executeBooster(type, 'start');
+            } else {
+                if (statusEl) {
+                    statusEl.textContent = 'OFF';
+                    statusEl.className = 'menu-status off';
+                }
+                Android.executeBooster(type, 'stop');
+            }
+        }
+
+    </script>
     <script>
         function openWirelessSettings() {
             Android.openWirelessDebugging();
@@ -309,6 +391,25 @@
         // Update status setiap 3 detik
         setInterval(updateDebugStatus, 3000);
         document.addEventListener('DOMContentLoaded', updateDebugStatus);
+
+        function toggleBooster(type, isOn) {
+            const statusId = 'status' + type.charAt(0).toUpperCase() + type.slice(1);
+            const statusEl = document.getElementById(statusId);
+            if (isOn) {
+                if (statusEl) {
+                    statusEl.textContent = 'ON';
+                    statusEl.className = 'menu-status on';
+                }
+                Android.executeBooster(type, 'start');
+            } else {
+                if (statusEl) {
+                    statusEl.textContent = 'OFF';
+                    statusEl.className = 'menu-status off';
+                }
+                Android.executeBooster(type, 'stop');
+            }
+        }
+
     </script>
   </body>
 </html>
