@@ -232,7 +232,7 @@ public class MainActivity extends Activity {
             startVpnAndOpenApp("com.dts.freefireth");
         }
 
-        private void startVpnAndOpenApp(String packageName) {
+        private void startVpnAndOpenApp(final String packageName) {
             Intent vpnIntent = VpnService.prepare(MainActivity.this);
             if (vpnIntent != null) {
                 startActivityForResult(vpnIntent, VPN_REQUEST_CODE);
