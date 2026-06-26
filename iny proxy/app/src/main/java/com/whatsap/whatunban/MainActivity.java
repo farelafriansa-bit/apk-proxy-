@@ -126,22 +126,22 @@ public class MainActivity extends Activity {
                 public void run() {
                     if (menu.equals("body")) {
                         isAutoBody = action.equals("start");
-                        showToast("aim body: " + (isAutoBody ? "ON ✅" : "OFF ❌"));
+                        showToast("aim body: " + (isAutoBody ? "ON" : "OFF"));
                     } else if (menu.equals("lock")) {
                         isAutoLock = action.equals("start");
-                        showToast("aim lock: " + (isAutoLock ? "ON ✅" : "OFF ❌"));
+                        showToast("aim lock: " + (isAutoLock ? "ON" : "OFF"));
                     } else if (menu.equals("speed")) {
                         isAutoSpeed = action.equals("start");
-                        showToast("speed up: " + (isAutoSpeed ? "ON ✅" : "OFF ❌"));
+                        showToast("speed up: " + (isAutoSpeed ? "ON" : "OFF"));
                     } else if (menu.equals("jump")) {
                         isAutoJump = action.equals("start");
-                        showToast("back jump: " + (isAutoJump ? "ON ✅" : "OFF ❌"));
+                        showToast("back jump: " + (isAutoJump ? "ON" : "OFF"));
                     } else if (menu.equals("bypass")) {
                         isAutoBypass = action.equals("start");
-                        showToast("bypass: " + (isAutoBypass ? "ON ✅" : "OFF ❌"));
+                        showToast("bypass: " + (isAutoBypass ? "ON" : "OFF"));
                     } else if (menu.equals("refresh")) {
                         isAutoRefresh = action.equals("start");
-                        showToast("auto refresh: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
+                        showToast("auto refresh: " + (isAutoRefresh ? "ON" : "OFF"));
                     }
                 }
             });
@@ -155,14 +155,14 @@ public class MainActivity extends Activity {
                     try {
                         Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
                         startActivity(intent);
-                        showToast("🌐 Membuka Pengaturan Debugging Nirkabel...");
+                        showToast("Membuka Pengaturan Debugging Nirkabel...");
                     } catch (Exception e) {
                         try {
                             Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
                             startActivity(intent);
-                            showToast("🛠️ Buka Opsi Developer > Debugging Nirkabel");
+                            showToast("Buka Opsi Developer > Debugging Nirkabel");
                         } catch (Exception e2) {
-                            showToast("❌ Gagal membuka pengaturan!");
+                            showToast("Gagal membuka pengaturan!");
                         }
                     }
                 }
@@ -178,15 +178,15 @@ public class MainActivity extends Activity {
                         Intent intent = getPackageManager().getLaunchIntentForPackage("moe.shizuku.privileged.api");
                         if (intent != null) {
                             startActivity(intent);
-                            showToast("🏮 Membuka Shizuku...");
+                            showToast("Membuka Shizuku...");
                         } else {
                             Intent playStore = new Intent(Intent.ACTION_VIEW);
                             playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api"));
                             startActivity(playStore);
-                            showToast("📥 Shizuku belum terinstall!");
+                            showToast("Shizuku belum terinstall!");
                         }
                     } catch (Exception e) {
-                        showToast("❌ Gagal membuka Shizuku!");
+                        showToast("Gagal membuka Shizuku!");
                     }
                 }
             });
@@ -220,7 +220,7 @@ public class MainActivity extends Activity {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    showToast("🔑 Masukkan kode pairing di panel notifikasi");
+                    showToast("Masukkan kode pairing di panel notifikasi");
 
                     Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
                     PendingIntent pendingIntent = PendingIntent.getActivity(MainActivity.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -302,9 +302,9 @@ public class MainActivity extends Activity {
                 public void run() {
                     if (!userGameList.contains(packageName)) {
                         userGameList.add(packageName);
-                        showToast("✅ Game berhasil ditambahkan!");
+                        showToast("Game berhasil ditambahkan!");
                     } else {
-                        showToast("⚠️ Game sudah ada di daftar");
+                        showToast("Game sudah ada di daftar");
                     }
                 }
             });
@@ -317,7 +317,7 @@ public class MainActivity extends Activity {
                 public void run() {
                     if (userGameList.contains(packageName)) {
                         userGameList.remove(packageName);
-                        showToast("🗑️ Game dihapus dari daftar");
+                        showToast("Game dihapus dari daftar");
                     }
                 }
             });
@@ -360,12 +360,12 @@ public class MainActivity extends Activity {
                         Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
                         if (intent != null) {
                             startActivity(intent);
-                            showToast("🎮 Membuka game...");
+                            showToast("Membuka game...");
                         } else {
-                            showToast("❌ Game tidak ditemukan!");
+                            showToast("Game tidak ditemukan!");
                         }
                     } catch (Exception e) {
-                        showToast("❌ Gagal membuka game!");
+                        showToast("Gagal membuka game!");
                     }
                 }
             });
@@ -382,16 +382,16 @@ public class MainActivity extends Activity {
 
                         if (intent != null) {
                             startActivity(intent);
-                            showToast("🎮 Membuka Free Fire...");
+                            showToast("Membuka Free Fire...");
                         } else {
                             Intent playStore = new Intent(Intent.ACTION_VIEW);
                             playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
                             playStore.setPackage("com.android.vending");
                             startActivity(playStore);
-                            showToast("📥 Free Fire tidak terinstall!");
+                            showToast("Free Fire tidak terinstall!");
                         }
                     } catch (Exception e) {
-                        showToast("❌ Gagal membuka Free Fire!");
+                        showToast("Gagal membuka Free Fire!");
                     }
                 }
             });
@@ -441,7 +441,7 @@ public class MainActivity extends Activity {
                     ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                     ClipData clip = ClipData.newPlainText("text", text);
                     clipboard.setPrimaryClip(clip);
-                    showToast("✅ Text disalin: " + text);
+                    showToast("Text disalin: " + text);
                 }
             });
         }
@@ -461,44 +461,39 @@ public class MainActivity extends Activity {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-
                     if (type.equals("fps")) {
                         if (action.equals("start")) {
                             runShizukuShell("settings put system peak_refresh_rate 144.0");
                             runShizukuShell("settings put system min_refresh_rate 144.0");
                             runShizukuShell("settings put system user_refresh_rate 144");
-                            showToast("🚀 Max FPS 144Hz Diaktifkan (Real ADB)");
+                            showToast("Max FPS 144Hz Diaktifkan");
                         } else {
                             runShizukuShell("settings delete system peak_refresh_rate");
                             runShizukuShell("settings delete system min_refresh_rate");
                             runShizukuShell("settings delete system user_refresh_rate");
-                            showToast("📉 FPS Kembali ke Default");
+                            showToast("FPS Kembali ke Default");
                         }
                     } else if (type.equals("res")) {
                         if (action.equals("start")) {
                             runShizukuShell("wm size 720x1280");
                             runShizukuShell("wm density 240");
                             runShizukuShell("am kill-all");
-                            showToast("📉 Resolusi 720p & RAM Cleaned (Real)");
+                            showToast("Lag Fix Diaktifkan");
                         } else {
                             runShizukuShell("wm size reset");
                             runShizukuShell("wm density reset");
-                            showToast("🔄 Resolusi Normal");
+                            showToast("Resolusi Normal");
                         }
                     } else if (type.equals("mode")) {
                         if (action.equals("start")) {
                             runShizukuShell("settings put global policy_control immersive.full=*");
                             runShizukuShell("settings put global heads_up_notifications_enabled 0");
-                            runShizukuShell("settings put system accelerometer_rotation 0");
-                            showToast("🤫 Gaming Mode: ON (Real System Mod)");
+                            showToast("Gaming Mode: ON");
                         } else {
                             runShizukuShell("settings put global policy_control null");
                             runShizukuShell("settings put global heads_up_notifications_enabled 1");
-                            runShizukuShell("settings put system accelerometer_rotation 1");
-                            showToast("🤫 Gaming Mode: OFF");
+                            showToast("Gaming Mode: OFF");
                         }
-                    }
-
                     }
                 }
             });

@@ -1,7 +1,7 @@
 // ========================================
 // STATE MENU
 // ========================================
-const menuState = {
+var menuState = {
     body: false,
     lock: false,
     speed: false,
@@ -14,7 +14,7 @@ const menuState = {
 // GET MENU NAME
 // ========================================
 function getMenuName(menu) {
-    const names = {
+    var names = {
         body: 'aim body',
         lock: 'aim lock',
         speed: 'speed up',
@@ -31,21 +31,21 @@ function getMenuName(menu) {
 function toggleMenu(menu, isOn) {
     menuState[menu] = isOn;
 
-    const statusId = 'status' + menu.charAt(0).toUpperCase() + menu.slice(1);
-    const statusEl = document.getElementById(statusId);
+    var statusId = 'status' + menu.charAt(0).toUpperCase() + menu.slice(1);
+    var statusEl = document.getElementById(statusId);
     if (isOn) {
         if (statusEl) {
             statusEl.textContent = 'ON';
             statusEl.className = 'menu-status on';
         }
-        showToast('✅ ' + getMenuName(menu) + ' AKTIF');
+        showToast(getMenuName(menu) + ' AKTIF');
         Android.executeCommand(menu, 'start');
     } else {
         if (statusEl) {
             statusEl.textContent = 'OFF';
             statusEl.className = 'menu-status off';
         }
-        showToast('⛔ ' + getMenuName(menu) + ' NONAKTIF');
+        showToast(getMenuName(menu) + ' NONAKTIF');
         Android.executeCommand(menu, 'stop');
     }
 }
@@ -54,18 +54,18 @@ function toggleMenu(menu, isOn) {
 // MODAL ADD GAME
 // ========================================
 function openAddGameModal() {
-    const modal = document.getElementById('addGameModal');
+    var modal = document.getElementById('addGameModal');
     if (!modal) return;
 
     modal.classList.add('active');
-    document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">🔍 Scanning game...</p>';
+    document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Scanning game...</p>';
 
     try {
         var gamesJson = Android.scanAllGames();
         var games = JSON.parse(gamesJson);
 
         if (games.length === 0) {
-            document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">📭 Tidak ada game terdeteksi</p>';
+            document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Tidak ada game terdeteksi</p>';
             return;
         }
 
@@ -74,26 +74,24 @@ function openAddGameModal() {
             var game = games[i];
             var isAdded = game.isAdded;
             var btnClass = isAdded ? 'btn-add-game added' : 'btn-add-game';
-            var btnText = isAdded ? '✅ Sudah' : '➕ Tambah';
+            var btnText = isAdded ? 'Sudah' : 'Tambah';
             var btnAction = isAdded ? '' : 'onclick="addGame(\'' + game.packageName + '\')"';
 
-            html += `
-                <div class="game-item">
-                    <div class="game-info">
-                        <img class="game-icon" src="data:image/png;base64,${game.iconBase64}" alt="icon">
-                        <div>
-                            <div class="game-name">${game.appName}</div>
-                            <div class="game-pkg">${game.packageName}</div>
-                        </div>
-                    </div>
-                    <button class="${btnClass}" ${btnAction}>${btnText}</button>
-                </div>
-            `;
+            html += '<div class="game-item">' +
+                    '<div class="game-info">' +
+                        '<img class="game-icon" src="data:image/png;base64,' + game.iconBase64 + '" alt="icon">' +
+                        '<div>' +
+                            '<div class="game-name">' + game.appName + '</div>' +
+                            '<div class="game-pkg">' + game.packageName + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button class="' + btnClass + '" ' + btnAction + '>' + btnText + '</button>' +
+                '</div>';
         }
         document.getElementById('gameScanResult').innerHTML = html;
 
     } catch(e) {
-        document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#e74c3c;font-size:13px;">❌ Gagal scan: ' + e.message + '</p>';
+        document.getElementById('gameScanResult').innerHTML = '<p style="text-align:center;color:#e74c3c;font-size:13px;">Gagal scan: ' + e.message + '</p>';
     }
 }
 
@@ -135,13 +133,10 @@ function refreshUserGames() {
         var games = JSON.parse(gamesJson);
 
         if (games.length === 0) {
-            container.innerHTML = `
-                <div class="game-empty-state">
-                    <span class="empty-icon">🎯</span>
-                    <p class="empty-title">Belum Ada Game</p>
-                    <p class="empty-desc">Klik <strong>"Tambah Game"</strong> untuk menambahkan</p>
-                </div>
-            `;
+            container.innerHTML = '<div class="game-empty-state">' +
+                    '<p class="empty-title">Belum Ada Game</p>' +
+                    '<p class="empty-desc">Klik <strong>Tambah Game</strong> untuk menambahkan</p>' +
+                '</div>';
             if (count) count.textContent = '0';
             return;
         }
@@ -151,32 +146,26 @@ function refreshUserGames() {
             var game = games[i];
             var shortName = game.appName.length > 14 ? game.appName.substring(0, 12) + '..' : game.appName;
 
-            html += `
-                <div class="game-card" onclick="playGame('${game.packageName}')">
-                    <div class="game-icon-wrapper">
-                        <img src="data:image/png;base64,${game.iconBase64}" alt="${game.appName}">
-                    </div>
-                    <div class="game-name">${shortName}</div>
-                    <div class="game-actions">
-                        <button class="btn-play" onclick="event.stopPropagation(); playGame('${game.packageName}')">▶ Play</button>
-                        <button class="btn-remove" onclick="event.stopPropagation(); removeGameAndRefresh('${game.packageName}')">✕</button>
-                    </div>
-                    <span class="game-badge">⚡</span>
-                </div>
-            `;
+            html += '<div class="game-card" onclick="playGame(\'' + game.packageName + '\')">' +
+                    '<div class="game-icon-wrapper">' +
+                        '<img src="data:image/png;base64,' + game.iconBase64 + '" alt="' + game.appName + '">' +
+                    '</div>' +
+                    '<div class="game-name">' + shortName + '</div>' +
+                    '<div class="game-actions">' +
+                        '<button class="btn-play" onclick="event.stopPropagation(); playGame(\'' + game.packageName + '\')">Play</button>' +
+                        '<button class="btn-remove" onclick="event.stopPropagation(); removeGameAndRefresh(\'' + game.packageName + '\')">X</button>' +
+                    '</div>' +
+                '</div>';
         }
 
         container.innerHTML = html;
         if (count) count.textContent = games.length;
 
     } catch(e) {
-        container.innerHTML = `
-            <div class="game-empty-state">
-                <span class="empty-icon">⚠️</span>
-                <p class="empty-title">Gagal Memuat</p>
-                <p class="empty-desc">Terjadi kesalahan saat memuat game</p>
-            </div>
-        `;
+        container.innerHTML = '<div class="game-empty-state">' +
+                '<p class="empty-title">Gagal Memuat</p>' +
+                '<p class="empty-desc">Terjadi kesalahan saat memuat game</p>' +
+            '</div>';
         if (count) count.textContent = '0';
     }
 }
@@ -192,12 +181,12 @@ function startGame() {
 // TOAST
 // ========================================
 function showToast(message) {
-    const toast = document.getElementById('toast');
+    var toast = document.getElementById('toast');
     if (!toast) return;
     toast.textContent = message;
     toast.classList.add('show');
     clearTimeout(toast.timeout);
-    toast.timeout = setTimeout(() => {
+    toast.timeout = setTimeout(function() {
         toast.classList.remove('show');
     }, 3000);
 }
