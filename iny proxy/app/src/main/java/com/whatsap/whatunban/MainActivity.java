@@ -22,10 +22,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-import androidx.core.content.ContextCompat;
+import android.app.Notification;
+import android.app.PendingIntent;
+
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,7 +41,7 @@ public class MainActivity extends Activity {
     private static final int PERMISSION_REQUEST_CODE = 123;
 
     // List game yang sudah ditambahkan user
-    private List<String> userGameList = new ArrayList<>();
+    private List<String> userGameList = java.util.Collections.synchronizedList(new ArrayList<String>());
 
     // State menu
     private boolean isAutoBody = false;
@@ -66,6 +65,8 @@ public class MainActivity extends Activity {
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setLoadWithOverviewMode(true);
         webView.getSettings().setUseWideViewPort(true);
+        webView.getSettings().setAllowFileAccess(true);
+        webView.getSettings().setAllowContentAccess(true);
 
         webView.addJavascriptInterface(new WebAppInterface(), "Android");
 
@@ -106,15 +107,10 @@ public class MainActivity extends Activity {
     }
 
     private void requestNecessaryPermissions() {
-        List<String> permissions = new ArrayList<>();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS);
+        if (Build.VERSION.SDK_INT >= 33) { // 33 is TIRAMISU
+            if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, PERMISSION_REQUEST_CODE);
             }
-        }
-
-        if (!permissions.isEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE);
         }
     }
 
@@ -205,8 +201,11 @@ public class MainActivity extends Activity {
 
                 boolean shizukuRunning = false;
                 try {
-                    Process process = Runtime.getRuntime().exec("sh /system/bin/getprop moe.shizuku.privileged.api");
-                    shizukuRunning = true;
+                    Process process = Runtime.getRuntime().exec("sh -c getprop moe.shizuku.privileged.api");
+                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                    String line = reader.readLine();
+                    shizukuRunning = line != null && line.trim().length() > 0;
+                    process.destroy();
                 } catch (Exception e) {}
 
                 status.put("shizuku", shizukuRunning);
@@ -223,19 +222,30 @@ public class MainActivity extends Activity {
                 public void run() {
                     showToast("🔑 Masukkan kode pairing di panel notifikasi");
 
-                    NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, CHANNEL_ID)
-                            .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
+                    PendingIntent pendingIntent = PendingIntent.getActivity(MainActivity.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                    Notification.Builder builder;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        builder = new Notification.Builder(MainActivity.this, CHANNEL_ID);
+                    } else {
+                        builder = new Notification.Builder(MainActivity.this);
+                    }
+
+                    builder.setSmallIcon(android.R.drawable.ic_dialog_info)
                             .setContentTitle("Pairing Debugging Nirkabel")
                             .setContentText("Klik di sini untuk memasukkan kode pairing Anda")
-                            .setPriority(NotificationCompat.PRIORITY_HIGH)
-                            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                            .setContentIntent(pendingIntent)
                             .setAutoCancel(true);
 
-                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
-                    try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        builder.setCategory(Notification.CATEGORY_MESSAGE);
+                        builder.setPriority(Notification.PRIORITY_HIGH);
+                    }
+
+                    NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (notificationManager != null) {
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
-                    } catch (SecurityException e) {
-                        showToast("⚠️ Berikan izin notifikasi!");
                     }
                 }
             });
@@ -330,21 +340,24 @@ public class MainActivity extends Activity {
             PackageManager pm = getPackageManager();
 
             try {
-                List<String> listCopy = new ArrayList<>(userGameList);
-                for (String pkg : listCopy) {
-                    try {
-                        ApplicationInfo appInfo = pm.getApplicationInfo(pkg, 0);
-                        JSONObject game = new JSONObject();
-                        game.put("packageName", pkg);
-                        game.put("appName", pm.getApplicationLabel(appInfo).toString());
+                // Iterating over synchronized list requires manual synchronization
+                synchronized (userGameList) {
+                    List<String> listCopy = new ArrayList<String>(userGameList);
+                    for (String pkg : listCopy) {
+                        try {
+                            ApplicationInfo appInfo = pm.getApplicationInfo(pkg, 0);
+                            JSONObject game = new JSONObject();
+                            game.put("packageName", pkg);
+                            game.put("appName", pm.getApplicationLabel(appInfo).toString());
 
-                        Drawable icon = pm.getApplicationIcon(appInfo);
-                        String iconBase64 = drawableToBase64(icon);
-                        game.put("iconBase64", iconBase64);
+                            Drawable icon = pm.getApplicationIcon(appInfo);
+                            String iconBase64 = drawableToBase64(icon);
+                            game.put("iconBase64", iconBase64);
 
-                        gamesArray.put(game);
-                    } catch (PackageManager.NameNotFoundException e) {
-                        userGameList.remove(pkg);
+                            gamesArray.put(game);
+                        } catch (PackageManager.NameNotFoundException e) {
+                            userGameList.remove(pkg);
+                        }
                     }
                 }
             } catch (Exception e) {
