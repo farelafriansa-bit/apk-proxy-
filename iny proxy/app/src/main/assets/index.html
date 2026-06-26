@@ -5,8 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Menu Mod</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .debug-status-float {
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            pointer-events: none;
+        }
+        .status-pill {
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .status-pill.on { color: #2ecc71; border-color: #2ecc71; }
+        .status-pill.off { color: #e74c3c; border-color: #e74c3c; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+    </style>
   </head>
   <body>
+
+    <!-- FLOATING STATUS -->
+    <div class="debug-status-float">
+        <div class="status-pill off" id="floatShizuku">
+            <div class="dot"></div> SHIZUKU: OFF
+        </div>
+        <div class="status-pill off" id="floatWireless">
+            <div class="dot"></div> WIRELESS: OFF
+        </div>
+    </div>
 
     <!-- HEADER -->
     <div class="header">
@@ -143,7 +180,7 @@
 		</div>
 	  </div>
 
-	  <div class="menu-item" onclick="Android.openWirelessDebugging()">
+	  <div class="menu-item" onclick="openWirelessSettings()">
 		<div class="menu-left">
 		  <span class="menu-icon">🌐</span>
 		  <div class="menu-info">
@@ -152,7 +189,7 @@
 		  </div>
 		</div>
 		<div class="menu-right">
-		  <span class="menu-status scan" style="background: #3498db;">OPEN</span>
+		  <span class="menu-status scan" id="statusWireless">OPEN</span>
 		</div>
 	  </div>
 
@@ -165,7 +202,7 @@
 		  </div>
 		</div>
 		<div class="menu-right">
-		  <span class="menu-status scan" style="background: #9b59b6;">OPEN</span>
+		  <span class="menu-status scan" id="statusShizuku">OPEN</span>
 		</div>
 	  </div>
 
@@ -231,5 +268,47 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        function openWirelessSettings() {
+            Android.openWirelessDebugging();
+            Android.showPairingNotification();
+        }
+
+        function updateDebugStatus() {
+            try {
+                var statusJson = Android.checkDebugStatus();
+                var status = JSON.parse(statusJson);
+
+                const shizukuEl = document.getElementById('floatShizuku');
+                const wirelessEl = document.getElementById('floatWireless');
+                const shizukuMenu = document.getElementById('statusShizuku');
+                const wirelessMenu = document.getElementById('statusWireless');
+
+                if (status.shizuku) {
+                    shizukuEl.className = 'status-pill on';
+                    shizukuEl.innerHTML = '<div class="dot"></div> SHIZUKU: ON';
+                    if (shizukuMenu) shizukuMenu.style.background = '#2ecc71';
+                } else {
+                    shizukuEl.className = 'status-pill off';
+                    shizukuEl.innerHTML = '<div class="dot"></div> SHIZUKU: OFF';
+                    if (shizukuMenu) shizukuMenu.style.background = '#9b59b6';
+                }
+
+                if (status.wireless) {
+                    wirelessEl.className = 'status-pill on';
+                    wirelessEl.innerHTML = '<div class="dot"></div> WIRELESS: ON';
+                    if (wirelessMenu) wirelessMenu.style.background = '#2ecc71';
+                } else {
+                    wirelessEl.className = 'status-pill off';
+                    wirelessEl.innerHTML = '<div class="dot"></div> WIRELESS: OFF';
+                    if (wirelessMenu) wirelessMenu.style.background = '#3498db';
+                }
+            } catch(e) {}
+        }
+
+        // Update status setiap 3 detik
+        setInterval(updateDebugStatus, 3000);
+        document.addEventListener('DOMContentLoaded', updateDebugStatus);
+    </script>
   </body>
 </html>

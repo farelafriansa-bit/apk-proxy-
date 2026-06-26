@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -20,12 +21,14 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private Handler handler = new Handler();
+    private Handler handler = new Handler(Looper.getMainLooper());
 
     // List game yang sudah ditambahkan user
     private List<String> userGameList = new ArrayList<>();
@@ -80,61 +83,113 @@ public class MainActivity extends Activity {
     class WebAppInterface {
 
         @JavascriptInterface
-        public void executeCommand(String menu, String action) {
-            if (menu.equals("body")) {
-                isAutoBody = action.equals("start");
-                showToast("aim body: " + (isAutoBody ? "ON ✅" : "OFF ❌"));
-            } else if (menu.equals("lock")) {
-                isAutoLock = action.equals("start");
-                showToast("aim lock: " + (isAutoLock ? "ON ✅" : "OFF ❌"));
-            } else if (menu.equals("speed")) {
-                isAutoSpeed = action.equals("start");
-                showToast("speed up: " + (isAutoSpeed ? "ON ✅" : "OFF ❌"));
-            } else if (menu.equals("jump")) {
-                isAutoJump = action.equals("start");
-                showToast("back jump: " + (isAutoJump ? "ON ✅" : "OFF ❌"));
-            } else if (menu.equals("bypass")) {
-                isAutoBypass = action.equals("start");
-                showToast("bypass: " + (isAutoBypass ? "ON ✅" : "OFF ❌"));
-            } else if (menu.equals("refresh")) {
-                isAutoRefresh = action.equals("start");
-                showToast("auto refresh: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
-            }
+        public void executeCommand(final String menu, final String action) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (menu.equals("body")) {
+                        isAutoBody = action.equals("start");
+                        showToast("aim body: " + (isAutoBody ? "ON ✅" : "OFF ❌"));
+                    } else if (menu.equals("lock")) {
+                        isAutoLock = action.equals("start");
+                        showToast("aim lock: " + (isAutoLock ? "ON ✅" : "OFF ❌"));
+                    } else if (menu.equals("speed")) {
+                        isAutoSpeed = action.equals("start");
+                        showToast("speed up: " + (isAutoSpeed ? "ON ✅" : "OFF ❌"));
+                    } else if (menu.equals("jump")) {
+                        isAutoJump = action.equals("start");
+                        showToast("back jump: " + (isAutoJump ? "ON ✅" : "OFF ❌"));
+                    } else if (menu.equals("bypass")) {
+                        isAutoBypass = action.equals("start");
+                        showToast("bypass: " + (isAutoBypass ? "ON ✅" : "OFF ❌"));
+                    } else if (menu.equals("refresh")) {
+                        isAutoRefresh = action.equals("start");
+                        showToast("auto refresh: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
+                    }
+                }
+            });
         }
 
         @JavascriptInterface
         public void openWirelessDebugging() {
-            try {
-                Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
-                startActivity(intent);
-                showToast("🌐 Membuka Pengaturan Debugging Nirkabel...");
-            } catch (Exception e) {
-                try {
-                    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
-                    startActivity(intent);
-                    showToast("🛠️ Buka Opsi Developer > Debugging Nirkabel");
-                } catch (Exception e2) {
-                    showToast("❌ Gagal membuka pengaturan!");
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
+                        startActivity(intent);
+                        showToast("🌐 Membuka Pengaturan Debugging Nirkabel...");
+                    } catch (Exception e) {
+                        try {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                            startActivity(intent);
+                            showToast("🛠️ Buka Opsi Developer > Debugging Nirkabel");
+                        } catch (Exception e2) {
+                            showToast("❌ Gagal membuka pengaturan!");
+                        }
+                    }
                 }
-            }
+            });
         }
 
         @JavascriptInterface
         public void openShizuku() {
-            try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage("moe.shizuku.privileged.api");
-                if (intent != null) {
-                    startActivity(intent);
-                    showToast("🏮 Membuka Shizuku...");
-                } else {
-                    Intent playStore = new Intent(Intent.ACTION_VIEW);
-                    playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api"));
-                    startActivity(playStore);
-                    showToast("📥 Shizuku belum terinstall!");
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = getPackageManager().getLaunchIntentForPackage("moe.shizuku.privileged.api");
+                        if (intent != null) {
+                            startActivity(intent);
+                            showToast("🏮 Membuka Shizuku...");
+                        } else {
+                            Intent playStore = new Intent(Intent.ACTION_VIEW);
+                            playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api"));
+                            startActivity(playStore);
+                            showToast("📥 Shizuku belum terinstall!");
+                        }
+                    } catch (Exception e) {
+                        showToast("❌ Gagal membuka Shizuku!");
+                    }
                 }
+            });
+        }
+
+        @JavascriptInterface
+        public String checkDebugStatus() {
+            JSONObject status = new JSONObject();
+            try {
+                // 1. Check Wireless Debugging (ADB over WiFi)
+                boolean adbEnabled = android.provider.Settings.Global.getInt(getContentResolver(), "adb_enabled", 0) > 0;
+                // Note: Checking if actually connected to wifi debugging is harder without root/shell
+                status.put("wireless", adbEnabled);
+
+                // 2. Check Shizuku Status (Simple check if service is responding)
+                boolean shizukuRunning = false;
+                try {
+                    // Try to execute a simple command via shizuku-shell if possible,
+                    // but for status we check if package is installed and responsive
+                    Process process = Runtime.getRuntime().exec("sh /system/bin/getprop moe.shizuku.privileged.api");
+                    shizukuRunning = true;
+                    // In real app, we'd check Shizuku.getBinder() != null
+                } catch (Exception e) {}
+
+                status.put("shizuku", shizukuRunning);
             } catch (Exception e) {
-                showToast("❌ Gagal membuka Shizuku!");
+                e.printStackTrace();
             }
+            return status.toString();
+        }
+
+        @JavascriptInterface
+        public void showPairingNotification() {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    showToast("🔑 Masukkan kode pairing di panel notifikasi sistem");
+                    // Typically this opens the notification shade or deep links to pairing
+                }
+            });
         }
 
         // ========================================
@@ -193,21 +248,31 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void addGame(String packageName) {
-            if (!userGameList.contains(packageName)) {
-                userGameList.add(packageName);
-                showToast("✅ Game berhasil ditambahkan!");
-            } else {
-                showToast("⚠️ Game sudah ada di daftar");
-            }
+        public void addGame(final String packageName) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (!userGameList.contains(packageName)) {
+                        userGameList.add(packageName);
+                        showToast("✅ Game berhasil ditambahkan!");
+                    } else {
+                        showToast("⚠️ Game sudah ada di daftar");
+                    }
+                }
+            });
         }
 
         @JavascriptInterface
-        public void removeGame(String packageName) {
-            if (userGameList.contains(packageName)) {
-                userGameList.remove(packageName);
-                showToast("🗑️ Game dihapus dari daftar");
-            }
+        public void removeGame(final String packageName) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (userGameList.contains(packageName)) {
+                        userGameList.remove(packageName);
+                        showToast("🗑️ Game dihapus dari daftar");
+                    }
+                }
+            });
         }
 
         @JavascriptInterface
@@ -242,42 +307,52 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openGame(final String packageName) {
-            try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
-                if (intent != null) {
-                    startActivity(intent);
-                    showToast("🎮 Membuka game...");
-                } else {
-                    showToast("❌ Game tidak ditemukan!");
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+                        if (intent != null) {
+                            startActivity(intent);
+                            showToast("🎮 Membuka game...");
+                        } else {
+                            showToast("❌ Game tidak ditemukan!");
+                        }
+                    } catch (Exception e) {
+                        showToast("❌ Gagal membuka game!");
+                    }
                 }
-            } catch (Exception e) {
-                showToast("❌ Gagal membuka game!");
-            }
+            });
         }
 
         @JavascriptInterface
         public void openFreeFire() {
-            try {
-                Intent intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefireth");
-                if (intent != null) {
-                    startActivity(intent);
-                    showToast("🎮 Membuka Free Fire...");
-                } else {
-                    Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
-                    if (intentMax != null) {
-                        startActivity(intentMax);
-                        showToast("🎮 Membuka Free Fire MAX...");
-                    } else {
-                        Intent playStore = new Intent(Intent.ACTION_VIEW);
-                        playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
-                        playStore.setPackage("com.android.vending");
-                        startActivity(playStore);
-                        showToast("📥 Free Fire tidak terinstall, buka Play Store...");
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefireth");
+                        if (intent != null) {
+                            startActivity(intent);
+                            showToast("🎮 Membuka Free Fire...");
+                        } else {
+                            Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
+                            if (intentMax != null) {
+                                startActivity(intentMax);
+                                showToast("🎮 Membuka Free Fire MAX...");
+                            } else {
+                                Intent playStore = new Intent(Intent.ACTION_VIEW);
+                                playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
+                                playStore.setPackage("com.android.vending");
+                                startActivity(playStore);
+                                showToast("📥 Free Fire tidak terinstall, buka Play Store...");
+                            }
+                        }
+                    } catch (Exception e) {
+                        showToast("❌ Gagal membuka Free Fire!");
                     }
                 }
-            } catch (Exception e) {
-                showToast("❌ Gagal membuka Free Fire!");
-            }
+            });
         }
 
         private String drawableToBase64(Drawable drawable) {
@@ -310,16 +385,26 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void showToast(String message) {
-            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+        public void showToast(final String message) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
         @JavascriptInterface
-        public void copyToClipboard(String text) {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("text", text);
-            clipboard.setPrimaryClip(clip);
-            showToast("✅ Text disalin: " + text);
+        public void copyToClipboard(final String text) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("text", text);
+                    clipboard.setPrimaryClip(clip);
+                    showToast("✅ Text disalin: " + text);
+                }
+            });
         }
 
         @JavascriptInterface

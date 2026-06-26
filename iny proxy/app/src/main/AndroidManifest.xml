@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
+    <!-- Shizuku Permission to appear in Authorized Apps list -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
     <application
         android:name=".GlobalApplication"
         android:allowBackup="true"
@@ -25,6 +28,11 @@
         </activity>
 
         <activity android:name=".GlobalApplication$CrashActivity" />
+
+        <!-- Shizuku required metadata -->
+        <meta-data
+            android:name="moe.shizuku.client.V3_SUPPORT"
+            android:value="true" />
 
     </application>
 
