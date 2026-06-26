@@ -9,7 +9,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.net.VpnService;
 import android.os.Bundle;
 import android.os.Handler;
 import android.webkit.JavascriptInterface;
@@ -27,8 +26,6 @@ import java.util.List;
 public class MainActivity extends Activity {
     private WebView webView;
     private Handler handler = new Handler();
-
-    private static final int VPN_REQUEST_CODE = 0x0F;
 
     // List game yang sudah ditambahkan user
     private List<String> userGameList = new ArrayList<>();
@@ -77,20 +74,6 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient());
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
-            startProxyVpn();
-        }
-    }
-
-    private void startProxyVpn() {
-        Intent intent = new Intent(this, ProxyVpnService.class);
-        intent.setAction("START_VPN");
-        startService(intent);
-    }
-
     // ========================================
     // WEB APP INTERFACE
     // ========================================
@@ -116,6 +99,41 @@ public class MainActivity extends Activity {
             } else if (menu.equals("refresh")) {
                 isAutoRefresh = action.equals("start");
                 showToast("auto refresh: " + (isAutoRefresh ? "ON ✅" : "OFF ❌"));
+            }
+        }
+
+        @JavascriptInterface
+        public void openWirelessDebugging() {
+            try {
+                Intent intent = new Intent("android.settings.ADB_WIFI_SETTINGS");
+                startActivity(intent);
+                showToast("🌐 Membuka Pengaturan Debugging Nirkabel...");
+            } catch (Exception e) {
+                try {
+                    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                    startActivity(intent);
+                    showToast("🛠️ Buka Opsi Developer > Debugging Nirkabel");
+                } catch (Exception e2) {
+                    showToast("❌ Gagal membuka pengaturan!");
+                }
+            }
+        }
+
+        @JavascriptInterface
+        public void openShizuku() {
+            try {
+                Intent intent = getPackageManager().getLaunchIntentForPackage("moe.shizuku.privileged.api");
+                if (intent != null) {
+                    startActivity(intent);
+                    showToast("🏮 Membuka Shizuku...");
+                } else {
+                    Intent playStore = new Intent(Intent.ACTION_VIEW);
+                    playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api"));
+                    startActivity(playStore);
+                    showToast("📥 Shizuku belum terinstall!");
+                }
+            } catch (Exception e) {
+                showToast("❌ Gagal membuka Shizuku!");
             }
         }
 
@@ -223,51 +241,43 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void openGame(String packageName) {
-            startVpnAndOpenApp(packageName);
+        public void openGame(final String packageName) {
+            try {
+                Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+                if (intent != null) {
+                    startActivity(intent);
+                    showToast("🎮 Membuka game...");
+                } else {
+                    showToast("❌ Game tidak ditemukan!");
+                }
+            } catch (Exception e) {
+                showToast("❌ Gagal membuka game!");
+            }
         }
 
         @JavascriptInterface
         public void openFreeFire() {
-            startVpnAndOpenApp("com.dts.freefireth");
-        }
-
-        private void startVpnAndOpenApp(final String packageName) {
-            Intent vpnIntent = VpnService.prepare(MainActivity.this);
-            if (vpnIntent != null) {
-                startActivityForResult(vpnIntent, VPN_REQUEST_CODE);
-            } else {
-                startProxyVpn();
-            }
-
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
-                        if (intent != null) {
-                            startActivity(intent);
-                            showToast("🎮 Membuka " + (packageName.contains("freefire") ? "Free Fire" : "game") + "...");
-                        } else if (packageName.equals("com.dts.freefireth")) {
-                            Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
-                            if (intentMax != null) {
-                                startActivity(intentMax);
-                                showToast("🎮 Membuka Free Fire MAX...");
-                            } else {
-                                Intent playStore = new Intent(Intent.ACTION_VIEW);
-                                playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
-                                playStore.setPackage("com.android.vending");
-                                startActivity(playStore);
-                                showToast("📥 Free Fire tidak terinstall, buka Play Store...");
-                            }
-                        } else {
-                            showToast("❌ Game tidak ditemukan!");
-                        }
-                    } catch (Exception e) {
-                        showToast("❌ Gagal membuka game!");
+            try {
+                Intent intent = getPackageManager().getLaunchIntentForPackage("com.dts.freefireth");
+                if (intent != null) {
+                    startActivity(intent);
+                    showToast("🎮 Membuka Free Fire...");
+                } else {
+                    Intent intentMax = getPackageManager().getLaunchIntentForPackage("com.dts.freefiremax");
+                    if (intentMax != null) {
+                        startActivity(intentMax);
+                        showToast("🎮 Membuka Free Fire MAX...");
+                    } else {
+                        Intent playStore = new Intent(Intent.ACTION_VIEW);
+                        playStore.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.dts.freefireth"));
+                        playStore.setPackage("com.android.vending");
+                        startActivity(playStore);
+                        showToast("📥 Free Fire tidak terinstall, buka Play Store...");
                     }
                 }
-            }, 2000); // Tunggu 2 detik untuk inisialisasi VPN
+            } catch (Exception e) {
+                showToast("❌ Gagal membuka Free Fire!");
+            }
         }
 
         private String drawableToBase64(Drawable drawable) {
@@ -279,7 +289,6 @@ public class MainActivity extends Activity {
                     int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 128;
                     int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 128;
 
-                    // Scale down for performance
                     if (width > 128) {
                         height = (int) (height * (128.0 / width));
                         width = 128;

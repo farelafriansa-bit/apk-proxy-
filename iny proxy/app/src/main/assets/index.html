@@ -119,7 +119,7 @@
 		<div class="menu-left">
 		  <span class="menu-icon">🔄</span>
 		  <div class="menu-info">
-			<span class="menu-title">auto refres</span>
+			<span class="menu-title">auto refresh</span>
 			<span class="menu-desc">Refresh otomatis</span>
 		  </div>
 		</div>
@@ -129,6 +129,43 @@
 			<input type="checkbox" id="toggleRefresh" onchange="toggleMenu('refresh', this.checked)">
 			<span class="slider"></span>
 		  </label>
+		</div>
+	  </div>
+
+	  <!-- DEBUGGING SETTINGS -->
+	  <div class="menu-item" style="background: #fdf2f2; border-color: #e74c3c;">
+		<div class="menu-left">
+		  <span class="menu-icon">⚙️</span>
+		  <div class="menu-info">
+			<span class="menu-title" style="color: #c0392b;">Pengaturan Debugging</span>
+			<span class="menu-desc">Wajib untuk menjalankan injector</span>
+		  </div>
+		</div>
+	  </div>
+
+	  <div class="menu-item" onclick="Android.openWirelessDebugging()">
+		<div class="menu-left">
+		  <span class="menu-icon">🌐</span>
+		  <div class="menu-info">
+			<span class="menu-title">Wireless Debugging</span>
+			<span class="menu-desc">Buka pengaturan WiFi Debug</span>
+		  </div>
+		</div>
+		<div class="menu-right">
+		  <span class="menu-status scan" style="background: #3498db;">OPEN</span>
+		</div>
+	  </div>
+
+	  <div class="menu-item" onclick="Android.openShizuku()">
+		<div class="menu-left">
+		  <span class="menu-icon">🏮</span>
+		  <div class="menu-info">
+			<span class="menu-title">Shizuku App</span>
+			<span class="menu-desc">Buka aplikasi Shizuku</span>
+		  </div>
+		</div>
+		<div class="menu-right">
+		  <span class="menu-status scan" style="background: #9b59b6;">OPEN</span>
 		</div>
 	  </div>
 
