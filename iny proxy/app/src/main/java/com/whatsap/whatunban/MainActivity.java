@@ -461,36 +461,44 @@ public class MainActivity extends Activity {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
+
                     if (type.equals("fps")) {
                         if (action.equals("start")) {
                             runShizukuShell("settings put system peak_refresh_rate 144.0");
                             runShizukuShell("settings put system min_refresh_rate 144.0");
-                            showToast("🚀 Max FPS 144Hz Diaktifkan");
+                            runShizukuShell("settings put system user_refresh_rate 144");
+                            showToast("🚀 Max FPS 144Hz Diaktifkan (Real ADB)");
                         } else {
                             runShizukuShell("settings delete system peak_refresh_rate");
                             runShizukuShell("settings delete system min_refresh_rate");
-                            showToast("📉 FPS Dikembalikan ke Default");
+                            runShizukuShell("settings delete system user_refresh_rate");
+                            showToast("📉 FPS Kembali ke Default");
                         }
                     } else if (type.equals("res")) {
                         if (action.equals("start")) {
                             runShizukuShell("wm size 720x1280");
                             runShizukuShell("wm density 240");
-                            showToast("📉 Resolusi Diturunkan (Lag Fix)");
+                            runShizukuShell("am kill-all");
+                            showToast("📉 Resolusi 720p & RAM Cleaned (Real)");
                         } else {
                             runShizukuShell("wm size reset");
                             runShizukuShell("wm density reset");
-                            showToast("🔄 Resolusi Dikembalikan");
+                            showToast("🔄 Resolusi Normal");
                         }
                     } else if (type.equals("mode")) {
                         if (action.equals("start")) {
                             runShizukuShell("settings put global policy_control immersive.full=*");
                             runShizukuShell("settings put global heads_up_notifications_enabled 0");
-                            showToast("🤫 Gaming Mode: ON");
+                            runShizukuShell("settings put system accelerometer_rotation 0");
+                            showToast("🤫 Gaming Mode: ON (Real System Mod)");
                         } else {
                             runShizukuShell("settings put global policy_control null");
                             runShizukuShell("settings put global heads_up_notifications_enabled 1");
+                            runShizukuShell("settings put system accelerometer_rotation 1");
                             showToast("🤫 Gaming Mode: OFF");
                         }
+                    }
+
                     }
                 }
             });
